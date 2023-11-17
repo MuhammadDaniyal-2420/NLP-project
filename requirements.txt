@@ -2,7 +2,4 @@ pandas
 sklearn
 streamlit
 pip
-sklearn.ensemble
-sklearn.model_selection
-RandomForestRegressor
-train_test_split
+
