@@ -15,45 +15,83 @@ numeric_columns = ['Open', 'High', 'Low', 'Close', 'Volume', 'Market Cap']
 for col in numeric_columns:
     data[col] = data[col].str.replace(',', '').astype(float)
 
-# Update the selected features list with the correct column names
-selected_features = ['Open', 'High', 'Low', 'Close', 'Volume', 'Market Cap']
-X = data[selected_features]
-y = data['Close']  # Assuming 'Close' price is the target variable
 
-# Split data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Initialize the model (Random Forest Regressor)
-model = RandomForestRegressor(n_estimators=100, random_state=42)
+st.set_page_config(page_title='Cryptocurrency Price Predictor', layout='wide')
 
-# Train the model
-model.fit(X_train, y_train)
 
-# Streamlit UI
 st.title('Cryptocurrency Price Predictor')
+st.markdown("---")
 
-# User inputs through sliders, text inputs, etc.
+
+
+# Sidebar layout
 st.sidebar.title('Enter Data for Prediction')
 
-open_price = st.sidebar.number_input('Enter Open Price', min_value=0.0)
-high_price = st.sidebar.number_input('Enter High Price', min_value=0.0)
-low_price = st.sidebar.number_input('Enter Low Price', min_value=0.0)
-close_price = st.sidebar.number_input('Enter Close Price', min_value=0.0)
-volume = st.sidebar.number_input('Enter Volume', min_value=0)
-market_cap = st.sidebar.number_input('Enter Market Cap', min_value=0)
+# Currency name dropdown
+currency_names = [
+    'tezos', 'binance-coin', 'eos', 'bitcoin', 'tether',
+    'xrp', 'bitcoin-cash', 'stellar', 'litecoin', 'ethereum',
+    'cardano', 'bitcoin-sv'
+]
 
-# Preprocess user input for prediction
-user_input = pd.DataFrame({
-    'Open': [open_price],
-    'High': [high_price],
-    'Low': [low_price],
-    'Close': [close_price],
-    'Volume': [volume],
-    'Market Cap': [market_cap]
-})
+selected_currency = st.sidebar.selectbox('Select Currency Name', currency_names)
 
-# Make predictions
-prediction = model.predict(user_input)
+if selected_currency:
+    filtered_data = data[data['Currency'] == selected_currency]
 
-# Display prediction to the user
-st.write('Predicted Close Price:', prediction[0])
+    # Predefined options for inputs
+    open_prices = [1.28, 0.909666, 44.53, 90.17, 238.02, 8320.83, None]
+    high_prices = [1.32, 0.965669, 7.09, 24.58, 8410.71, 395.5, None]
+    low_prices = [367.83, 4377.46, 23.16, 3.79, 0.606857, None]
+    close_prices = [0.850526, 1.23, 5285.14, 382.3, None]
+    volumes = [0, 3284328, 792592, 62818.3, None]
+    market_caps = [951600, 1451600, 9048082, None]
+
+    col1, col2 = st.sidebar.columns(2)
+
+    with col1:
+        open_price = st.selectbox('Enter Open Price', open_prices)
+        high_price = st.selectbox('Enter High Price', high_prices)
+        low_price = st.selectbox('Enter Low Price', low_prices)
+        close_price = st.selectbox('Enter Close Price', close_prices)
+
+    with col2:
+        volume = st.selectbox('Enter Volume', volumes)
+        market_cap = st.selectbox('Enter Market Cap', market_caps)
+
+    if None in [open_price, high_price, low_price, close_price, volume, market_cap]:
+        st.warning('Please enter custom values')
+    else:
+        selected_features = ['Open', 'High', 'Low', 'Close', 'Volume', 'Market Cap']
+        X = filtered_data[selected_features]
+        y = filtered_data['Close']  # Assuming 'Close' price is the target variable
+
+        # Split data into training and testing sets
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+        # Initialize the model (Random Forest Regressor)
+        model = RandomForestRegressor(n_estimators=100, random_state=42)
+
+        # Train the model
+        model.fit(X_train, y_train)
+
+        # Preprocess user input for prediction
+        user_input = pd.DataFrame({
+            'Open': [open_price],
+            'High': [high_price],
+            'Low': [low_price],
+            'Close': [close_price],
+            'Volume': [volume],
+            'Market Cap': [market_cap]
+        })
+
+        # Make predictions
+        prediction = model.predict(user_input)
+
+        # Display prediction to the user
+        st.markdown('---')
+        st.success('Predicted Close Price:')
+        st.title(prediction[0])
+else:
+    st.warning('Please select a Currency Name')
