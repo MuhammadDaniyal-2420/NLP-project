@@ -15,15 +15,10 @@ numeric_columns = ['Open', 'High', 'Low', 'Close', 'Volume', 'Market Cap']
 for col in numeric_columns:
     data[col] = data[col].str.replace(',', '').astype(float)
 
-
-
+# Streamlit UI
 st.set_page_config(page_title='Cryptocurrency Price Predictor', layout='wide')
-
-
 st.title('Cryptocurrency Price Predictor')
 st.markdown("---")
-
-
 
 # Sidebar layout
 st.sidebar.title('Enter Data for Prediction')
