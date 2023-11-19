@@ -1,7 +1,11 @@
 import pandas as pd
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.svm import SVR
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 import streamlit as st
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 # Load dataset
 data = pd.read_csv('consolidated_coin_data.csv')
@@ -9,9 +13,7 @@ data = pd.read_csv('consolidated_coin_data.csv')
 # Data preprocessing steps
 data['Date'] = pd.to_datetime(data['Date'])
 
-# Replace commas in numeric columns and convert to float
 numeric_columns = ['Open', 'High', 'Low', 'Close', 'Volume', 'Market Cap']
-
 for col in numeric_columns:
     data[col] = data[col].str.replace(',', '').astype(float)
 
@@ -35,7 +37,6 @@ selected_currency = st.sidebar.selectbox('Select Currency Name', currency_names)
 if selected_currency:
     filtered_data = data[data['Currency'] == selected_currency]
 
-    # Predefined options for inputs
     open_prices = [1.28, 0.909666, 44.53, 90.17, 238.02, 8320.83, None]
     high_prices = [1.32, 0.965669, 7.09, 24.58, 8410.71, 395.5, None]
     low_prices = [367.83, 4377.46, 23.16, 3.79, 0.606857, None]
@@ -65,28 +66,38 @@ if selected_currency:
         # Split data into training and testing sets
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-        # Initialize the model (Random Forest Regressor)
-        model = RandomForestRegressor(n_estimators=100, random_state=42)
+        # Model selection dropdown
+        models = {
+            'Random Forest': RandomForestRegressor(n_estimators=100, random_state=42),
+            'Gradient Boosting': GradientBoostingRegressor(n_estimators=100, random_state=42),
+            'Support Vector Machine': SVR(kernel='rbf')
+        }
+        selected_model = st.sidebar.selectbox('Select Model', list(models.keys()))
 
-        # Train the model
+        # Train the selected model
+        model = models[selected_model]
         model.fit(X_train, y_train)
 
-        # Preprocess user input for prediction
-        user_input = pd.DataFrame({
-            'Open': [open_price],
-            'High': [high_price],
-            'Low': [low_price],
-            'Close': [close_price],
-            'Volume': [volume],
-            'Market Cap': [market_cap]
-        })
-
         # Make predictions
-        prediction = model.predict(user_input)
+        y_pred = model.predict(X_test)
 
-        # Display prediction to the user
+        # Model evaluation
+        st.subheader("Model Performance Metrics")
+        st.write(f"Mean Absolute Error: {mean_absolute_error(y_test, y_pred):.2f}")
+        st.write(f"Mean Squared Error: {mean_squared_error(y_test, y_pred):.2f}")
+        st.write(f"R-squared: {r2_score(y_test, y_pred):.2f}")
+
+        # Visualize predictions vs actual values
+        plt.figure(figsize=(10, 6))
+        sns.scatterplot(x=y_test.index, y=y_test, label='Actual Values')
+        sns.lineplot(x=y_test.index, y=y_pred, label='Predicted Values', color='orange')
+        plt.title('Actual vs Predicted Values')
+        plt.xlabel('Data Index')
+        plt.ylabel('Close Price')
+        st.pyplot(plt)
+
+        # Display predicted value to the user
         st.markdown('---')
-        st.success('Predicted Close Price:')
-        st.title(prediction[0])
+        st.success(f'Predicted Close Price: {y_pred[0]:.2f}')
 else:
     st.warning('Please select a Currency Name')
